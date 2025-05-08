@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Os Lusíadas - Mapa Interativo (Nova Imagem)</title>
+    
+    <style>
+        /* Estilos Gerais (revertidos) */
+        body {
+            font-family: sans-serif; 
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4; 
+            color: #333;
+        }
+
+        #container {
+            max-width: 900px; 
+            margin: 30px auto;
+            padding: 20px; 
+            background-color: #fff; 
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            border: 1px solid #ddd; 
+        }
+
+        h1 {
+            color: #a00f0f; 
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2.2em; 
+        }
+        
+        h2 {
+           color: #333; 
+           text-align: center;
+           margin-bottom: 20px;
+           font-size: 1.6em; 
+           padding-bottom: 10px; 
+           border-bottom: 1px solid #eee; 
+        }
+       
+        hr {
+            border: 0;
+            height: 1px;
+            background: #ccc; 
+            margin: 40px 0;
+        }
+
+        /* Secção da Viagem */
+        #viagem {
+             margin-bottom: 30px;
+        }
+
+        /* Botões */
+         #botoesViagem {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px; 
+            margin-bottom: 25px; 
+            justify-content: center;
+        }
+        .botao-ponto {
+            padding: 10px 15px;
+            background-color: #e0e0e0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+             font-size: 0.9em;
+             color: #333;
+        }
+        .botao-ponto:hover { background-color: #dcdcdc; }
+        .botao-ponto.ativo { background-color: #a00f0f; color: white; font-weight: bold; border-color: #800000; }
+
+        /* Mapa e Marcadores */
+        #mapaContainer {
+            position: relative; 
+            width: 100%;
+            /* AJUSTE A ALTURA CONFORME A PROPORÇÃO DA SUA NOVA IMAGEM */
+            height: 600px; /* Exemplo, pode precisar de mais ou menos */
+            border: 1px solid #ccc; 
+            border-radius: 5px;
+            overflow: hidden; 
+            background-color: #eef; 
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+
+            /* ==================================================================
+             IMPORTANTE: COLOQUE O NOME DO SEU NOVO FICHEIRO DE IMAGEM AQUI!
+             Ex: background-image: url('mapaLusiadas.jpg');
+            ================================================================== */
+            background-image: url('mapaLusiadas.png'); /* <-- COLOQUE O NOME/CAMINHO AQUI */
+            background-size: cover; /* Ou contain */
+            background-position: center center;
+        }
+
+        .mapa-ponto {
+            position: absolute; 
+            width: 18px; 
+            height: 18px;
+            background-color: #0056b3; 
+            border-radius: 50%; 
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); 
+            cursor: pointer;
+            transform: translate(-50%, -50%); 
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+            z-index: 10; /* Garante que ficam por cima do fundo */
+        }
+        .mapa-ponto:hover { transform: translate(-50%, -50%) scale(1.2); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5); }
+        .mapa-ponto.ativo { background-color: #e63946; box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.6), 0 2px 5px rgba(0,0,0,0.4); transform: translate(-50%, -50%) scale(1.3); }
+
+        /* Ícones CSS específicos (mantidos, mas Calecute re-adicionado) */
+        .icon-lisboa { background-color: #cd853f; border-radius: 3px 3px 0 0; width: 16px; height: 10px; }
+        .icon-lisboa::before { content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); width: 12px; height: 10px; background-color: #cd853f; border-radius: 0 0 2px 2px; }
+        .icon-lisboa::after { content: ''; position: absolute; top: -4px; left: 50%; transform: translateX(-50%); width: 6px; height: 4px; background-color: #a0522d; border-radius: 1px 1px 0 0; }
+        .icon-adamastor { background-color: #555; border-radius: 50% 50% 0 0; width: 20px; height: 10px; border: none; }
+        .icon-adamastor::before, .icon-adamastor::after { content: ''; position: absolute; width: 0; height: 0; border-style: solid; background: transparent; }
+        .icon-adamastor::before { bottom: 0px; left: -3px; border-width: 0 8px 12px 8px; border-color: transparent transparent #555 transparent; transform: rotate(-15deg); }
+        .icon-adamastor::after { bottom: 0px; right: -3px; border-width: 0 8px 12px 8px; border-color: transparent transparent #666 transparent; transform: rotate(15deg); }
+        .icon-ilha { background-color: transparent; border: none; box-shadow: none; width: 10px; height: 10px; }
+        .icon-ilha::before, .icon-ilha::after { content: ""; position: absolute; left: 0; top: 0; width: 10px; height: 16px; background: #e55a8a; border-radius: 10px 10px 0 0; }
+        .icon-ilha::before { transform: translateX(-50%) rotate(-45deg); transform-origin: bottom center; }
+        .icon-ilha::after { transform: translateX(50%) rotate(45deg); transform-origin: bottom center; left: -10px; }
+        .icon-calecute { background-color: #ffcc66; border-radius: 0; width: 14px; height: 8px; border: 1px solid #cca352; }
+        .icon-calecute::after { content: ''; position: absolute; top: -8px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-style: solid; border-width: 0 10px 8px 10px; border-color: transparent transparent #cc8833 transparent; }
+
+        /* Área de Informação */
+        #infoViagem {
+            background-color: #f9f9f9; border: 1px solid #eee; padding: 15px;
+            border-radius: 5px; min-height: 120px; margin-top: 20px; 
+            opacity: 0; transform: translateY(10px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        #infoViagem.visivel { opacity: 1; transform: translateY(0); }
+        #infoViagem h3 { margin-top: 0; color: #a00f0f; font-size: 1.2em; border-bottom: none; padding-bottom: 5px; margin-bottom: 10px; }
+        #infoViagem strong { color: #333; font-weight: bold; }
+
+        /* Estilos do Quiz (revertidos) */
+        #quiz { margin-bottom: 30px; }
+        #quiz-container { background-color: #f9f9f9; border: 1px solid #eee; padding: 20px; border-radius: 5px; box-shadow: none; }
+        #questao { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; color: #333; }
+        #opcoes button { display: block; width: 100%; padding: 12px; margin-bottom: 10px; background-color: #e7e7e7; border: 1px solid #ccc; border-radius: 5px; cursor: pointer; text-align: left; transition: background-color 0.3s ease; color: #333; font-size: 1em; }
+        #opcoes button:hover:not([disabled]) { background-color: #dcdcdc; }
+        #opcoes button:focus { outline: 1px dotted #333; outline-offset: 2px; }
+        #opcoes button.correta { background-color: #90ee90; border-color: #5cb85c; color: #333; font-weight: bold; }
+        #opcoes button.errada { background-color: #f08080; border-color: #d9534f; color: #333; font-weight: bold; }
+        #opcoes button:disabled { cursor: default; opacity: 0.7; }
+        #botaoProximo { display: block; width: 100%; padding: 12px; background-color: #a00f0f; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1.1em; margin-top: 20px; transition: background-color 0.3s ease; }
+        #botaoProximo:hover { background-color: #800000; }
+        #feedback { margin-top: 15px; font-weight: bold; min-height: 1.1em; font-size: 1em; text-align: left; padding: 0; border-radius: 0; }
+        #feedback.feedback-correto { color: green; background: none; }
+        #feedback.feedback-errado { color: red; background: none; }
+        #resultadoFinal { font-size: 1.2em; text-align: center; margin-top: 20px; font-weight: bold; color: #333; }
+        #resultadoFinal button { padding: 10px 20px; margin-top: 15px; font-size: 1em; cursor: pointer; background-color: #5dade2; color: white; border: none; border-radius: 5px; }
+        #resultadoFinal button:hover { background-color: #3498db; }
+        .escondido { display: none; }
+
+    </style>
+
+</head>
+<body>
+
+    <div id="container">
+        <h1>Os Lusíadas - Mapa Interativo </h1>
+
+        <section id="viagem">
+            <h2>Explora a Viagem de Gama</h2>
+            <p>Clica num botão ou num ponto no mapa para descobrir eventos:</p>
+            
+             <div id="botoesViagem">
+                <button class="botao-ponto" data-ponto="lisboa">Lisboa (Partida)</button>
+                <button class="botao-ponto" data-ponto="adamastor">Cabo (Adamastor)</button>
+                <button class="botao-ponto" data-ponto="mocambique">Moçambique</button> 
+                <button class="botao-ponto" data-ponto="melinde">Melinde</button>
+                <button class="botao-ponto" data-ponto="calecute">Calecute</button> <button class="botao-ponto" data-ponto="ilha">Ilha dos Amores</button>
+                <button class="botao-ponto" data-ponto="regresso">Regresso</button>
+            </div>
+
+            <div id="mapaContainer">
+                <div class="mapa-ponto icon-lisboa"    data-ponto="lisboa"    style="top: 15%; left: 23%;"></div>
+                <div class="mapa-ponto icon-adamastor" data-ponto="adamastor" style="top: 87%; left: 38%;"></div>
+                <div class="mapa-ponto"                data-ponto="mocambique"style="top: 68%; left: 50%;"></div> 
+                <div class="mapa-ponto"                data-ponto="melinde"   style="top: 55%; left: 51%;"></div>
+                <div class="mapa-ponto icon-calecute"  data-ponto="calecute"  style="top: 40%; left: 70%;"></div> <div class="mapa-ponto icon-ilha"      data-ponto="ilha"      style="top: 58%; left: 75%;"></div> <div class="mapa-ponto"                data-ponto="regresso"  style="top: 15%; left: 25%;"></div> </div> 
+
+            <div id="infoViagem"> 
+                <p>Seleciona um ponto de viagem acima (botão ou mapa).</p>
+            </div>
+        </section>
+
+        <hr> 
+
+        <section id="quiz">
+            <h2>Quiz Lusíada (20 Perguntas)</h2>
+            <div id="quiz-container">
+                <div id="questao">A carregar pergunta...</div>
+                <div id="opcoes"></div>
+                <button id="botaoProximo">Verificar / Próxima</button>
+                <div id="feedback"></div>
+                <div id="resultadoFinal"></div>
+            </div>
+        </section>
+ <footer>
+            <p>&copy; 2025 Ricardo Carvalho. Todos os direitos reservados.</p>
+            </footer>
+
+
+    </div><script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- LÓGICA DO EXPLORADOR DA VIAGEM ---
+
+            const botoesPontoViagem = document.querySelectorAll('#botoesViagem .botao-ponto'); 
+            const marcadoresMapa = document.querySelectorAll('#mapaContainer .mapa-ponto'); 
+            const infoViagemDiv = document.getElementById('infoViagem');
+
+            // Dados dos pontos da viagem (Calecute readicionado)
+            const dadosViagem = {
+                lisboa: { nome: "Lisboa (Partida)", descricao: "A frota de Vasco da Gama parte do Tejo. O 'Velho do Restelo' profere um discurso pessimista...", episodio_chave: "Despedida em Belém / O Velho do Restelo", canto_ref: "Canto IV" },
+                adamastor: { nome: "Cabo da Boa Esperança (Adamastor)", descricao: "Ao dobrar o cabo, surge o gigante Adamastor...", episodio_chave: "O Gigante Adamastor", canto_ref: "Canto V" },
+                mocambique: { nome: "Moçambique", descricao: "Primeiro contacto hostil na costa africana oriental, devido a intrigas de Baco. Vénus intervém...", episodio_chave: "Cilada de Baco / Primeiro Contacto", canto_ref: "Canto I e II" }, 
+                melinde: { nome: "Melinde", descricao: "Os portugueses são bem recebidos pelo rei de Melinde. Vasco da Gama narra...", episodio_chave: "Narrativa de Gama ao Rei de Melinde", canto_ref: "Cantos III, IV e V" },
+                calecute: { nome: "Calecute (Chegada à Índia)", descricao: "Finalmente, a armada chega ao seu destino na Índia. As negociações com o Samorim são complexas...", episodio_chave: "Chegada e negociações em Calecute", canto_ref: "Cantos VII e VIII" }, // Readicionado
+                ilha: { nome: "Ilha dos Amores", descricao: "No regresso, Vénus prepara uma ilha paradisíaca como recompensa... (Posição no mapa é simbólica)", episodio_chave: "Recompensa Divina / Profecias", canto_ref: "Cantos IX e X" },
+                 regresso: { nome: "Regresso a Lisboa", descricao: "A epopeia termina com o regresso triunfal dos navegadores... (Posição no mapa é simbólica)", episodio_chave: "Chegada / Exortação Final", canto_ref: "Canto X" }
+            };
+
+            // Função central para mostrar informação e destacar elementos
+            function mostrarInfoPonto(pontoId) {
+                 const dados = dadosViagem[pontoId];
+                 infoViagemDiv.classList.remove('visivel'); 
+
+                 setTimeout(() => {
+                     if (dados) {
+                        infoViagemDiv.innerHTML = `
+                            <h3>${dados.nome}</h3>
+                            <p><strong>Descrição:</strong> ${dados.descricao}</p>
+                            <p><strong>Episódio Chave:</strong> ${dados.episodio_chave}</p>
+                            <p><strong>Referência Principal:</strong> ${dados.canto_ref}</p>
+                        `;
+                     } else {
+                         infoViagemDiv.innerHTML = `<p>Informação não disponível.</p>`; 
+                     }
+
+                     botoesPontoViagem.forEach(btn => {
+                         btn.classList.toggle('ativo', btn.getAttribute('data-ponto') === pontoId);
+                     });
+                     marcadoresMapa.forEach(mark => {
+                          mark.classList.toggle('ativo', mark.getAttribute('data-ponto') === pontoId);
+                     });
+
+                     infoViagemDiv.classList.add('visivel'); 
+                 }, 50); 
+            }
+
+            // Adiciona listeners aos BOTÕES
+            botoesPontoViagem.forEach(botao => { 
+                botao.addEventListener('click', () => {
+                    const pontoId = botao.getAttribute('data-ponto');
+                    mostrarInfoPonto(pontoId); 
+                });
+            });
+
+            // Adiciona listeners aos MARCADORES DO MAPA
+            marcadoresMapa.forEach(marcador => { 
+                marcador.addEventListener('click', () => {
+                    const pontoId = marcador.getAttribute('data-ponto');
+                    mostrarInfoPonto(pontoId);
+                });
+            });
+
+
+            // --- LÓGICA DO QUIZ (Mantida exatamente igual) ---
+
+            const questaoDiv = document.getElementById('questao');
+            const opcoesDiv = document.getElementById('opcoes');
+            const feedbackDiv = document.getElementById('feedback');
+            const botaoProximo = document.getElementById('botaoProximo');
+            const resultadoFinalDiv = document.getElementById('resultadoFinal');
+            const quizContainer = document.getElementById('quiz-container');
+
+            const perguntasQuiz = [ /* As mesmas 20 perguntas */ 
+                 { pergunta: "Quantos Cantos tem a obra 'Os Lusíadas'?", opcoes: ["8", "10", "12", "15"], respostaCorreta: "10" },
+                 { pergunta: "Qual deusa mitológica protege os portugueses na sua viagem?", opcoes: ["Juno", "Minerva", "Vénus", "Diana"], respostaCorreta: "Vénus" },
+                 { pergunta: "Qual deus mitológico se opõe ativamente aos portugueses?", opcoes: ["Marte", "Neptuno", "Júpiter", "Baco"], respostaCorreta: "Baco" },
+                 { pergunta: "Que figura profética surge no Cabo da Boa Esperança?", opcoes: ["Uma Sereia", "O Velho do Restelo", "Adamastor", "Proteu"], respostaCorreta: "Adamastor" },
+                 { pergunta: "O episódio de Inês de Castro, narrado por Gama, é um exemplo de que género?", opcoes: ["Lírico-amoroso", "Bélico", "Cómico", "Mitológico"], respostaCorreta: "Lírico-amoroso" },
+                 { pergunta: "Quem é o 'Velho do Restelo' e o que ele critica?", opcoes: ["Um navegador experiente que critica a rota", "Um sábio que critica a ambição e os custos das navegações", "Um sacerdote que abençoa a viagem", "Um astrólogo que prevê naufrágios"], respostaCorreta: "Um sábio que critica a ambição e os custos das navegações" },
+                 { pergunta: "Qual o nome da 'recompensa' divina oferecida por Vénus aos navegadores no regresso?", opcoes: ["Campos Elísios", "Jardim das Hespérides", "Ilha dos Amores", "Atlântida"], respostaCorreta: "Ilha dos Amores" },
+                 { pergunta: "A estrutura de cada estrofe de 'Os Lusíadas' chama-se:", opcoes: ["Quadra", "Sextilha", "Oitava-rima", "Soneto"], respostaCorreta: "Oitava-rima" },
+                 { pergunta: "A quem é dedicada a obra 'Os Lusíadas'?", opcoes: ["D. Manuel I", "D. João III", "Vasco da Gama", "D. Sebastião"], respostaCorreta: "D. Sebastião" },
+                 { pergunta: "Qual o nome do irmão de Vasco da Gama que o acompanha na viagem?", opcoes: ["Fernão", "Paulo da Gama", "Diogo Cão", "Pedro Álvares Cabral"], respostaCorreta: "Paulo da Gama" },
+                 { pergunta: "A qual rei Vasco da Gama narra a história de Portugal e da viagem até então?", opcoes: ["Rei de Moçambique", "Rei de Calecute", "Rei de Melinde", "Rei de Sofala"], respostaCorreta: "Rei de Melinde" },
+                 { pergunta: "Que batalha fundacional de Portugal, com intervenção divina, é narrada na obra?", opcoes: ["Batalha de Aljubarrota", "Batalha de Ourique", "Cerco de Diu", "Tomada de Ceuta"], respostaCorreta: "Batalha de Ourique" },
+                 { pergunta: "Além da viagem de Gama, que outro plano narrativo é central em 'Os Lusíadas'?", opcoes: ["A vida de Camões", "A História de Portugal", "A Guerra dos Cem Anos", "As Cruzadas"], respostaCorreta: "A História de Portugal" },
+                 { pergunta: "O gigante Adamastor profetiza principalmente...", opcoes: ["Riquezas encontradas na Índia", "Novas ilhas descobertas", "Desgraças e naufrágios futuros no cabo", "Uma aliança com reinos africanos"], respostaCorreta: "Desgraças e naufrágios futuros no cabo" },
+                 { pergunta: "Quem mostra a 'Máquina do Mundo' a Vasco da Gama na Ilha dos Amores?", opcoes: ["Vénus", "Uma Ninfa", "A deusa Tétis", "Júpiter"], respostaCorreta: "A deusa Tétis" },
+                 { pergunta: "Quem ajuda Vénus a acalmar a grande tempestade invocada pelos deuses marinhos?", opcoes: ["Os ventos (Éolo)", "As Ninfas", "Júpiter", "Neptuno"], respostaCorreta: "As Ninfas" },
+                 { pergunta: "A oferta de presentes dos portugueses ao Samorim de Calecute resultou em...", opcoes: ["Uma forte aliança comercial", "Grande admiração pela cultura portuguesa", "Desconfiança e tensão", "A conversão do Samorim"], respostaCorreta: "Desconfiança e tensão" }, 
+                 { pergunta: "Qual a principal razão para Baco temer o sucesso dos portugueses?", opcoes: ["Medo de perder poder no Olimpo", "Ser inimigo pessoal de Vasco da Gama", "Receio de perder a sua fama na Índia", "Não gostar de navegações"], respostaCorreta: "Receio de perder a sua fama na Índia" },
+                 { pergunta: "Onde, na estrutura da obra, Camões invoca as ninfas do Tejo (Tágides)?", opcoes: ["Na Dedicatória", "Na Invocação (Canto I)", "No Epílogo (Canto X)", "Na descrição da Ilha dos Amores"], respostaCorreta: "Na Invocação (Canto I)" },
+                 { pergunta: "Que episódio narra a defesa da honra de damas inglesas por cavaleiros portugueses?", opcoes: ["A Batalha de Aljubarrota", "Os Doze de Inglaterra", "A Dinastia de Avis", "O Cerco de Diu"], respostaCorreta: "Os Doze de Inglaterra" }
+             ];
+
+            let perguntaAtualIndex = 0;
+            let pontuacao = 0;
+            let respostaSelecionada = false; 
+
+             function carregarPergunta() { /* ... */ }
+             function verificarResposta() { /* ... */ }
+             function proximaPergunta() { /* ... */ }
+             function mostrarResultado() { /* ... */ }
+
+             // Copie as funções carregarPergunta, verificarResposta, proximaPergunta e mostrarResultado
+             // da versão anterior do código aqui, pois elas não mudaram.
+             // (Omitido aqui por brevidade, mas elas estão corretas na resposta anterior)
+
+             // *** INÍCIO do código das funções do Quiz (copiado da resposta anterior) ***
+              function carregarPergunta() { 
+                 respostaSelecionada = false; 
+                feedbackDiv.textContent = ''; 
+                feedbackDiv.style.color = ''; 
+                botaoProximo.textContent = "Verificar";
+                botaoProximo.disabled = true; 
+
+                const botoesAntigos = opcoesDiv.querySelectorAll('button');
+                botoesAntigos.forEach(b => {
+                    b.classList.remove('correta', 'errada');
+                    b.disabled = false; 
+                    b.style.fontWeight = 'normal'; 
+                });
+
+
+                if (perguntaAtualIndex < perguntasQuiz.length) {
+                    const perguntaAtual = perguntasQuiz[perguntaAtualIndex];
+                    questaoDiv.textContent = `${perguntaAtualIndex + 1}. ${perguntaAtual.pergunta}`;
+                    opcoesDiv.innerHTML = ''; 
+
+                    const opcoesBaralhadas = [...perguntaAtual.opcoes].sort(() => Math.random() - 0.5);
+
+                    opcoesBaralhadas.forEach(opcao => {
+                        const botao = document.createElement('button');
+                        botao.textContent = opcao;
+                        
+                        botao.onclick = () => {
+                            if (respostaSelecionada) return; 
+                            
+                            const todosBotoesOpcao = opcoesDiv.querySelectorAll('button');
+                            todosBotoesOpcao.forEach(b => b.style.fontWeight = 'normal'); 
+                            botao.style.fontWeight = 'bold'; 
+                            botaoProximo.disabled = false; 
+                            botaoProximo.dataset.opcaoEscolhida = opcao;
+                            botaoProximo.dataset.botaoClicadoRef = Array.from(todosBotoesOpcao).indexOf(botao); 
+                        };
+
+                        opcoesDiv.appendChild(botao);
+                    });
+                     botaoProximo.dataset.respostaCorreta = perguntaAtual.respostaCorreta; 
+                     botaoProximo.onclick = verificarResposta; 
+
+                } else {
+                    mostrarResultado();
+                }
+             }
+             function verificarResposta() { 
+                  if (botaoProximo.disabled) { 
+                     return;
+                 }
+
+                if (respostaSelecionada) return; 
+                respostaSelecionada = true;
+
+                 const opcaoEscolhida = botaoProximo.dataset.opcaoEscolhida;
+                 const respostaCerta = botaoProximo.dataset.respostaCorreta;
+                 const indiceBotaoClicado = parseInt(botaoProximo.dataset.botaoClicadoRef);
+                 const todosBotoesOpcao = opcoesDiv.querySelectorAll('button');
+                 const botaoClicado = todosBotoesOpcao[indiceBotaoClicado];
+
+                todosBotoesOpcao.forEach(b => b.disabled = true);
+
+                 if (opcaoEscolhida === respostaCerta) {
+                     pontuacao++;
+                     botaoClicado.classList.add('correta');
+                     feedbackDiv.textContent = "Correto!";
+                     feedbackDiv.style.color = 'green'; 
+                 } else {
+                     botaoClicado.classList.add('errada');
+                     feedbackDiv.textContent = `Errado! A resposta correta era: ${respostaCerta}`;
+                     feedbackDiv.style.color = 'red'; 
+                      todosBotoesOpcao.forEach(b => {
+                         if (b.textContent === respostaCerta) {
+                             b.classList.add('correta');
+                             b.style.fontWeight = 'bold'; 
+                         }
+                     });
+                 }
+                  botaoProximo.textContent = "Próxima Pergunta";
+                  botaoProximo.onclick = proximaPergunta; 
+             }
+             function proximaPergunta() { 
+                  perguntaAtualIndex++;
+                  feedbackDiv.style.color = ''; 
+                  carregarPergunta();
+             }
+             function mostrarResultado() { 
+                 quizContainer.innerHTML = ''; 
+                resultadoFinalDiv.innerHTML = `
+                    <h2>Quiz Terminado!</h2>
+                    <p>A tua pontuação foi: ${pontuacao} de ${perguntasQuiz.length} perguntas.</p>
+                    <button onclick="window.location.reload()">Tentar Novamente</button>
+                `;
+                 quizContainer.appendChild(resultadoFinalDiv); 
+             }
+            // *** FIM do código das funções do Quiz ***
+
+
+            // Iniciar o Quiz
+            carregarPergunta();
+
+        }); // Fim do DOMContentLoaded
+    </script>
+
+</body>
+</html>
